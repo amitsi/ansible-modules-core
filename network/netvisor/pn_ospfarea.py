@@ -128,7 +128,7 @@ def main():
     module = AnsibleModule(
         argument_spec=dict(
             pn_cliusername=dict(required=True, type='str'),
-            pn_clipassword=dict(required=True, type='str'),
+            pn_clipassword=dict(required=True, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str'),
             pn_command=dict(required=True, type='str',
                             choices=['vrouter-ospf-area-add',
