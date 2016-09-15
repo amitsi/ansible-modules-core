@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_trunk
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to create/delete/modify a trunk.
@@ -49,11 +48,12 @@ options:
       - Target switch(es) to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the trunk commands as value.
-    required: true
-    choices: ['trunk-create', 'trunk-delete', 'trunk-modify']
+      - State the action to perform. Use 'present' to create trunk,
+        'absent' to delete trunk and 'update' to modify trunk.
+    required: True
+    choices: ['present', 'absent', 'update']
     type: str
   pn_name:
     description:
@@ -157,25 +157,25 @@ options:
 EXAMPLES = """
 - name: create trunk
   pn_trunk:
-    pn_command: 'trunk-create'
+    state: 'present'
     pn_name: 'spine-to-leaf'
     pn_ports: '11,12,13,14'
 
 - name: delete trunk
   pn_trunk:
-    pn_command: 'trunk-delete'
+    state: 'absent'
     pn_name: 'spine-to-leaf'
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the trunk command.
+  description: The set of responses from the trunk command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the trunk command.
+  description: The set of error responses from the trunk command.
   returned: on error
   type: list
 changed:
@@ -240,18 +240,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -275,6 +276,22 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'trunk-create'
+    if state == 'absent':
+        command = 'trunk-delete'
+    if state == 'update':
+        command = 'trunk-modify'
+    return command
+
+
 def main():
     """ This portion is for arguments parsing """
     module = AnsibleModule(
@@ -282,9 +299,8 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['trunk-create', 'trunk-delete',
-                                     'trunk-modify']),
+            state=dict(required=True, type='str',
+                       choices=['present', 'absent', 'update']),
             pn_name=dict(required=True, type='str'),
             pn_ports=dict(type='str'),
             pn_speed=dict(type='str',
@@ -313,14 +329,14 @@ def main():
             pn_host=dict(type='bool')
         ),
         required_if=(
-            ["pn_command", "trunk-create", ["pn_name", "pn_ports"]],
-            ["pn_command", "trunk-delete", ["pn_name"]],
-            ["pn_command", "trunk-modify", ["pn_name"]]
+            ["state", "present", ["pn_name", "pn_ports"]],
+            ["state", "absent", ["pn_name"]],
+            ["state", "update", ["pn_name"]]
         )
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state = module.params['state']
     name = module.params['pn_name']
     ports = module.params['pn_ports']
     speed = module.params['pn_speed']
@@ -343,6 +359,8 @@ def main():
     loopvlans = module.params['pn_loopvlans']
     routing = module.params['pn_routing']
     host = module.params['pn_host']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
