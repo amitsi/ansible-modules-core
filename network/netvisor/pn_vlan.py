@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vlan
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to create/delete a VLAN.
@@ -50,11 +49,12 @@ options:
       - Target switch(es) to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vlan-create/delete command as value.
+      - State the action to perform. Use 'present' to create vlan and
+        'absent' to delete vlan.
     required: True
-    choices: ['vlan-create', 'vlan-delete']
+    choices: ['present', 'absent']
     type: str
   pn_vlanid:
     description:
@@ -93,25 +93,25 @@ options:
 EXAMPLES = """
 - name: create a VLAN
   pn_vlan:
-    pn_command: 'vlan-create'
+    state: 'present'
     pn_vlanid: 1854
     pn_scope: fabric
 
 - name: delete VLANs
   pn_vlan:
-    pn_command: 'vlan-delete'
+    state: 'absent'
     pn_vlanid: 1854
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the vlan command.
+  description: The set of responses from the vlan command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the vlan command.
+  description: The set of error responses from the vlan command.
   returned: on error
   type: list
 changed:
@@ -180,18 +180,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state= module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -215,15 +216,31 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vlan-create'
+    if state == 'absent':
+        command = 'vlan-delete'
+    return command
+
+
 def main():
     """ This section is for arguments parsing """
+    arguement_spec = pn_arguement_spec
+
     module = AnsibleModule(
         argument_spec=dict(
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vlan-create', 'vlan-delete']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent']),
             pn_vlanid=dict(required=True, type='int'),
             pn_scope=dict(type='str', choices=['fabric', 'local']),
             pn_description=dict(type='str'),
@@ -232,19 +249,21 @@ def main():
             pn_untagged_ports=dict(type='str')
         ),
         required_if=(
-            ["pn_command", "vlan-create", ["pn_vlanid", "pn_scope"]],
-            ["pn_command", "vlan-delete", ["pn_vlanid"]]
+            ["state", "present", ["pn_vlanid", "pn_scope"]],
+            ["state", "absent", ["pn_vlanid"]]
         )
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state = module.params['state']
     vlanid = module.params['pn_vlanid']
     scope = module.params['pn_scope']
     description = module.params['pn_description']
     stats = module.params['pn_stats']
     ports = module.params['pn_ports']
     untagged_ports = module.params['pn_untagged_ports']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
