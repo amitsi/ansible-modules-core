@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vrouterlbif
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to add/remove vrouter-loopback-interface.
@@ -51,12 +50,12 @@ options:
       - Target switch(es) to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vrouter-loopback-interface command
-        as value.
+      - State the action to perform. Use 'present' to add vrouter loopback
+        interface and 'absent' to remove vrouter loopback interface.
     required: True
-    choices: ['vrouter-loopback-interface-add', 'vrouter-loopback-interface-remove']
+    choices: ['present', 'absent']
     type: str
   pn_vrouter_name:
     description:
@@ -77,26 +76,26 @@ options:
 EXAMPLES = """
 - name: add vrouter-loopback-interface
   pn_vrouterlbif:
-    pn_command: 'vrouter-loopback-interface-add'
+    state: 'present'
     pn_vrouter_name: 'ansible-vrouter'
     pn_interface_ip: '104.104.104.1'
 
 - name: remove vrouter-loopback-interface
   pn_vrouterlbif:
-    pn_command: 'vrouter-loopback-interface-remove'
+    state: 'absent'
     pn_vrouter_name: 'ansible-vrouter'
     pn_interface_ip: '104.104.104.1'
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the vrouterlb command.
+  description: The set of responses from the vrouterlb command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the vrouterlb command.
+  description: The set of error responses from the vrouterlb command.
   returned: on error
   type: list
 changed:
@@ -187,18 +186,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -222,6 +222,20 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vrouter-loopback-interface-add'
+    if state == 'absent':
+        command = 'vrouter-loopback-interface-remove'
+    return command
+
+
 def main():
     """ This portion is for arguments parsing """
     module = AnsibleModule(
@@ -229,26 +243,27 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vrouter-loopback-interface-add',
-                                     'vrouter-loopback-interface-remove']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent']),
             pn_vrouter_name=dict(required=True, type='str'),
             pn_interface_ip=dict(type='str'),
             pn_index=dict(type='int')
         ),
         required_if=(
-            ["pn_command", "vrouter-loopback-interface-add",
+            ["state", "present",
              ["pn_vrouter_name", "pn_interface_ip"]],
-            ["pn_command", "vrouter-loopback-interface-remove",
+            ["state", "absent",
              ["pn_vrouter_name", "pn_interface_ip"]]
         )
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state = module.params['state']
     vrouter_name = module.params['pn_vrouter_name']
     interface_ip = module.params['pn_interface_ip']
     index = module.params['pn_index']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
