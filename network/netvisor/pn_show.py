@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_show
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: Run show commands on nvOS device.
@@ -84,13 +83,13 @@ EXAMPLES = """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the show command.
+  description: The set of responses from the show command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the show command.
+  description: The set of error responses from the show command.
   returned: on error
   type: list
 changed:
@@ -134,16 +133,15 @@ def run_cli(module, cli):
     cliswitch = module.params['pn_cliswitch']
     command = module.params['pn_command']
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             msg='%s: ' % command,
