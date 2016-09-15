@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vrouterif
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to add/remove/modify vrouter-interface.
@@ -50,12 +49,13 @@ options:
       - Target switch to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vrouter-interface command as value.
+      - State the action to perform. Use 'present' to add vrouter interface,
+        'absent' to remove vrouter interface and 'update' to modify vrouter
+        interface.
     required: True
-    choices: ['vrouter-interface-add', 'vrouter-interface-remove',
-             'vrouter-interface-modify']
+    choices: ['present', 'absent', 'update']
     type: str
   pn_vrouter_name:
     description:
@@ -106,7 +106,7 @@ options:
     type: int
   pn_vrrp_priority:
     description:
-      - Speicfies the priority for the VRRP interface. This is a value between
+      - Specify the priority for the VRRP interface. This is a value between
          1 (lowest) and 255 (highest).
     type: int
   pn_vrrp_adv_int:
@@ -133,7 +133,7 @@ EXAMPLES = """
   pn_vrouterif:
     pn_cliusername: admin
     pn_clipassword: admin
-    pn_command: 'vrouter-interface-add'
+    state: 'present'
     pn_vrouter_name: 'ansible-vrouter'
     pn_interface_ip: 101.101.101.2/24
     pn_vlan: 101
@@ -142,7 +142,7 @@ EXAMPLES = """
   pn_vrouterif:
     pn_cliusername: admin
     pn_clipassword: admin
-    pn_command: vrouter-interface-add
+    state: 'present'
     pn_vrouter_name: 'ansible-vrouter'
     pn_interface_ip: 101.101.101.2/24
     pn_vrrp_ip: 101.101.101.1/24
@@ -153,20 +153,20 @@ EXAMPLES = """
   pn_vrouterif:
     pn_cliusername: admin
     pn_clipassword: admin
-    pn_command: 'vrouter-interface-remove'
+    state: 'absent'
     pn_vrouter_name: 'ansible-vrouter'
     pn_interface_ip: 101.101.101.2/24
 """
 
 RETURN = """
 vrouterifcmd:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout/msg:
-  description: the set of responses from the vrouterif command.
+  description: The set of responses from the vrouterif command.
   returned: on success
   type: list
 stderr/msg:
-  description: the set of error responses from the vrouterif command.
+  description: The set of error responses from the vrouterif command.
   returned: on error
   type: str
 changed:
@@ -303,18 +303,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -338,6 +339,22 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vrouter-interface-add'
+    if state == 'absent':
+        command = 'vrouter-interface-remove'
+    if state == 'update':
+        command = 'vrouter-interface-modify'
+    return command
+
+
 def main():
     """ This portion is for arguments parsing """
     module = AnsibleModule(
@@ -345,9 +362,8 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vrouter-interface-add',
-                                     'vrouter-interface-remove']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent']),
             pn_vrouter_name=dict(required=True, type='str'),
             pn_vlan=dict(type='int'),
             pn_interface_ip=dict(required=True, type='str'),
@@ -366,15 +382,15 @@ def main():
             pn_nic_str=dict(type='str')
         ),
         required_if=(
-            ["pn_command", "vrouter-interface-add",
+            ["state", "present",
              ["pn_vrouter_name", "pn_interface_ip"]],
-            ["pn_command", "vrouter-interface-remove",
+            ["state", "absent",
              ["pn_vrouter_name", "pn_nic_str"]]
         ),
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state = module.params['state']
     vrouter_name = module.params['pn_vrouter_name']
     vlan = module.params['pn_vlan']
     interface_ip = module.params['pn_interface_ip']
@@ -390,6 +406,8 @@ def main():
     l3port = module.params['pn_l3port']
     secondary_macs = module.params['pn_secondary_macs']
     nic_str = module.params['pn_nic_str']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
