@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vrouterbgp
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to add/remove/modify vrouter-bgp.
@@ -50,11 +49,12 @@ options:
       - Target switch(es) to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vrouter-bgp command as value.
+      - State the action to perform. Use 'present' to add bgp,
+        'absent' to remove bgp and 'update' to modify bgp.
     required: True
-    choices: ['vrouter-bgp-add', 'vrouter-bgp-remove', 'vrouter-bgp-modify']
+    choices: ['present', 'absent', 'update']
     type: str
   pn_vrouter_name:
     description:
@@ -154,26 +154,26 @@ options:
 EXAMPLES = """
 - name: add vrouter-bgp
   pn_vrouterbgp:
-    pn_command: 'vrouter-bgp-add'
+    state: 'present'
     pn_vrouter_name: 'ansible-vrouter'
     pn_neighbor: 104.104.104.1
     pn_remote_as: 1800
 
 - name: remove vrouter-bgp
   pn_vrouterbgp:
-    pn_command: 'vrouter-delete'
+    state: 'absent'
     pn_name: 'ansible-vrouter'
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the vrouterbpg command.
+  description: The set of responses from the vrouterbpg command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the vrouterbgp command.
+  description: The set of error responses from the vrouterbgp command.
   returned: on error
   type: list
 changed:
@@ -259,18 +259,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -294,6 +295,22 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vrouter-bgp-add'
+    if state == 'absent':
+        command = 'vrouter-bgp-remove'
+    if state == 'update':
+        command = 'vrouter-bgp-modify'
+    return command
+
+
 def main():
     """ This portion is for arguments parsing """
     module = AnsibleModule(
@@ -301,14 +318,13 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vrouter-bgp-add', 'vrouter-bgp-remove',
-                                     'vrouter-bgp-modify']),
+            state=dict(required=True, type='str',
+                       choices=['present', 'absent', 'update']),
             pn_vrouter_name=dict(required=True, type='str'),
             pn_neighbor=dict(type='str'),
             pn_remote_as=dict(type='str'),
             pn_next_hop_self=dict(type='bool'),
-            pn_password=dict(type='str'),
+            pn_password=dict(type='str', no_log=True),
             pn_ebgp=dict(type='int'),
             pn_prefix_listin=dict(type='str'),
             pn_prefix_listout=dict(type='str'),
@@ -328,17 +344,17 @@ def main():
             pn_route_mapout=dict(type='str')
         ),
         required_if=(
-            ["pn_command", "vrouter-bgp-add",
+            ["state", "present",
              ["pn_vrouter_name", "pn_neighbor", "pn_remote_as"]],
-            ["pn_command", "vrouter-bgp-remove",
+            ["state", "absent",
              ["pn_vrouter_name", "pn_neighbor"]],
-            ["pn_command", "vrouter-bgp-modify",
+            ["state", "update",
              ["pn_vrouter_name", "pn_neighbor"]]
         )
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state= module.params['state']
     vrouter_name = module.params['pn_vrouter_name']
     neighbor = module.params['pn_neighbor']
     remote_as = module.params['pn_remote_as']
@@ -364,6 +380,7 @@ def main():
     # Building the CLI command string
     cli = pn_cli(module)
 
+    command = get_command_from_state(state)
     if command == 'vrouter-bgp-remove':
         check_cli(module, cli)
         if VROUTER_EXISTS is False:
