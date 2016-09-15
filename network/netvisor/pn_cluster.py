@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_cluster
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to create/delete a cluster.
@@ -53,12 +52,12 @@ options:
       - Target switch to run the cli on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the cluster-create/cluster-delete command
-        as value.
+      - Specify action to perform. Use 'present' to create cluster and 'absent'
+        to delete cluster.
     required: true
-    choices: ['cluster-create', 'cluster-delete']
+    choices: ['present', 'absent']
     type: str
   pn_name:
     description:
@@ -85,7 +84,7 @@ options:
 EXAMPLES = """
 - name: create spine cluster
   pn_cluster:
-    pn_command: 'cluster-create'
+    state: 'present'
     pn_name: 'spine-cluster'
     pn_cluster_node1: 'spine01'
     pn_cluster_node2: 'spine02'
@@ -94,20 +93,20 @@ EXAMPLES = """
 
 - name: delete spine cluster
   pn_cluster:
-    pn_command: 'cluster-delete'
+    state: 'absent'
     pn_name: 'spine-cluster'
     pn_quiet: True
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the cluster command.
+  description: The set of responses from the cluster command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the cluster command.
+  description: The set of error responses from the cluster command.
   returned: on error
   type: list
 changed:
@@ -190,18 +189,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -225,6 +225,20 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'cluster-create'
+    if state == 'absent':
+        command = 'cluster-delete'
+    return command
+
+
 def main():
     """ This section is for arguments parsing """
     module = AnsibleModule(
@@ -232,26 +246,28 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['cluster-create', 'cluster-delete']),
+            state =dict(required=True, type='str',
+                            choices=['present', 'absent']),
             pn_name=dict(required=True, type='str'),
             pn_cluster_node1=dict(type='str'),
             pn_cluster_node2=dict(type='str'),
             pn_validate=dict(type='bool')
         ),
         required_if=(
-            ["pn_command", "cluster-create",
+            ["state", "present",
              ["pn_name", "pn_cluster_node1", "pn_cluster_node2"]],
-            ["pn_command", "cluster-delete", ["pn_name"]]
+            ["state", "absent", ["pn_name"]]
         )
     )
 
     # Accessing the parameters
-    command = module.params['pn_command']
+    state = module.params['state']
     name = module.params['pn_name']
     cluster_node1 = module.params['pn_cluster_node1']
     cluster_node2 = module.params['pn_cluster_node2']
     validate = module.params['pn_validate']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
