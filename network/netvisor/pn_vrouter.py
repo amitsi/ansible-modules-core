@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vrouter
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1
 short_description: CLI command to create/delete/modify a vrouter.
@@ -53,11 +52,12 @@ options:
       - Target switch(es) to run the CLI on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vrouter command as value.
-    required: true
-    choices: ['vrouter-create', 'vrouter-delete', 'vrouter-modify']
+      - State the action to perform. Use 'present' to create vrouter,
+        'absent' to delete vrouter and 'update' to modify vrouter.
+    required: True
+    choices: ['present', 'absent', 'update']
     type: str
   pn_name:
     description:
@@ -134,26 +134,26 @@ options:
 EXAMPLES = """
 - name: create vrouter
   pn_vrouter:
-    pn_command: 'vrouter-create'
+    state: 'present'
     pn_name: 'ansible-vrouter'
     pn_vnet: 'ansible-fab-global'
     pn_router_id: 208.74.182.1
 
 - name: delete vrouter
   pn_vrouter:
-    pn_command: 'vrouter-delete'
+    state: 'absent'
     pn_name: 'ansible-vrouter'
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the vrouter command.
+  description: The set of responses from the vrouter command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the vrouter command.
+  description: The set of error responses from the vrouter command.
   returned: on error
   type: list
 changed:
@@ -243,18 +243,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -278,6 +279,22 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vrouter-create'
+    if state == 'absent':
+        command = 'vrouter-delete'
+    if state == 'update':
+        command = 'vrouter-modify'
+    return command
+
+
 def main():
     """ This section is for arguments parsing """
     module = AnsibleModule(
@@ -285,9 +302,8 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vrouter-create', 'vrouter-delete',
-                                     'vrouter-modify']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent', 'update']),
             pn_name=dict(required=True, type='str'),
             pn_vnet=dict(type='str'),
             pn_service_type=dict(type='str', choices=['dedicated', 'shared']),
@@ -308,14 +324,14 @@ def main():
             pn_vrrp_track_port=dict(type='str')
         ),
         required_if=(
-            ["pn_command", "vrouter-create", ["pn_name", "pn_vnet"]],
-            ["pn_command", "vrouter-delete", ["pn_name"]],
-            ["pn_command", "vrouter-modify", ["pn_name"]]
+            ["state", "present", ["pn_name", "pn_vnet"]],
+            ["state", "absent", ["pn_name"]],
+            ["state", "update", ["pn_name"]]
         )
     )
 
     # Accessing the arguments
-    command = module.params['pn_command']
+    state = module.params['state']
     name = module.params['pn_name']
     vnet = module.params['pn_vnet']
     service_type = module.params['pn_service_type']
@@ -331,6 +347,8 @@ def main():
     ospf_redistribute = module.params['pn_ospf_redistribute']
     ospf_options = module.params['pn_ospf_options']
     vrrp_track_port = module.params['pn_vrrp_track_port']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
