@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_ospfarea
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to add/remove ospf area to/from a vrouter.
@@ -49,16 +48,16 @@ options:
       - Target switch(es) to run the CLI on.
     required: False
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vrouter-ospf-area add/remove
-        command as value.
+      - State the action to perform. Use 'present' to add ospf-area, 'absent'
+        to remove ospf-area and 'update' to modify ospf-area.
     required: true
-    choices: ['vrouter-ospf-area-add', 'vrouter-ospf-area-remove', 'vrouter-ospf-area-modify']
+    choices: ['present', 'absent', 'update']
     type: str
   pn_vrouter_name:
     description:
-      - specify the name of the vRouter.
+      - Specify the name of the vRouter.
     required: true
     type: str
   pn_ospf_area:
@@ -90,30 +89,30 @@ options:
 EXAMPLES = """
 - name: "Add OSPF area to vrouter"
   pn_ospfarea:
+    state: present
     pn_cliusername: admin
     pn_clipassword: admin
-    pn_ospfcommand: vrouter-ospf-area-add
     pn_ospf_area: 1.0.0.0
     pn_stub_type: stub
 
 - name: "Remove OSPF from vrouter"
   pn_ospf:
+    state: absent
     pn_cliusername: admin
     pn_clipassword: admin
-    pn_ospfcommand: vrouter-ospf-remove
     pn_vrouter_name: name-string
     pn_ospf_area: 1.0.0.0
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the ospf command.
+  description: The set of responses from the ospf command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the ospf command.
+  description: The set of error responses from the ospf command.
   returned: on error
   type: list
 changed:
@@ -123,6 +122,22 @@ changed:
 """
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vrouter-ospf-area-add'
+    if state == 'absent':
+        command = 'vrouter-ospf-area-remove'
+    if state == 'update':
+        command = 'vrouter-ospf-area-modify'
+    return command
+
+
 def main():
     """ This section is for arguments parsing """
     module = AnsibleModule(
@@ -130,10 +145,8 @@ def main():
             pn_cliusername=dict(required=True, type='str'),
             pn_clipassword=dict(required=True, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vrouter-ospf-area-add',
-                                     'vrouter-ospf-area-remove',
-                                     'vrouter-ospf-area-modify']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent', 'update']),
             pn_vrouter_name=dict(required=True, type='str'),
             pn_ospf_area=dict(required=True, type='str'),
             pn_stub_type=dict(type='str', choices=['none', 'stub', 'nssa',
@@ -149,13 +162,15 @@ def main():
     cliusername = module.params['pn_cliusername']
     clipassword = module.params['pn_clipassword']
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
     vrouter_name = module.params['pn_vrouter_name']
     ospf_area = module.params['pn_ospf_area']
     stub_type = module.params['pn_stub_type']
     prefix_listin = module.params['pn_prefix_listin']
     prefix_listout = module.params['pn_prefix_listout']
     quiet = module.params['pn_quiet']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = '/usr/bin/cli'
@@ -184,15 +199,13 @@ def main():
 
     # Run the CLI command
     ospfcommand = shlex.split(cli)
-    response = subprocess.Popen(ospfcommand, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
 
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(ospfcommand)
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=cli,
             stderr=err.rstrip("\r\n"),
