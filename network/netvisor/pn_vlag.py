@@ -19,13 +19,12 @@
 #
 
 
-import subprocess
 import shlex
 
 DOCUMENTATION = """
 ---
 module: pn_vlag
-author: "Pluribus Networks"
+author: "Pluribus Networks (@amitsi)"
 version_added: "2.2"
 version: 1.0
 short_description: CLI command to create/delete/modify vlag.
@@ -52,11 +51,12 @@ options:
     description:
       - Target switch(es) to run this command on.
     type: str
-  pn_command:
+  state:
     description:
-      - The C(pn_command) takes the vlag-create/delete/modify command as value.
-    required: true
-    choices: ['vlag-create', 'vlag-delete', 'vlag-modify']
+      - State the action to perform. Use 'present' to create vlag,
+        'absent' to delete vlag and 'update' to modify vlag.
+    required: True
+    choices: ['present', 'absent', 'update']
     type: str
   pn_name:
     description:
@@ -114,7 +114,7 @@ options:
 EXAMPLES = """
 - name: create a VLAG
   pn_vlag:
-    pn_command: 'vlag-create'
+    state: 'present'
     pn_name: spine-to-leaf
     pn_port: 'spine01-to-leaf'
     pn_peer_port: 'spine02-to-leaf'
@@ -123,19 +123,19 @@ EXAMPLES = """
 
 - name: delete VLAGs
   pn_vlag:
-    pn_command: 'vlag-delete'
+    state: 'absent'
     pn_name: spine-to-leaf
 """
 
 RETURN = """
 command:
-  description: the CLI command run on the target node(s).
+  description: The CLI command run on the target node(s).
 stdout:
-  description: the set of responses from the vlag command.
+  description: The set of responses from the vlag command.
   returned: always
   type: list
 stderr:
-  description: the set of error responses from the vlag command.
+  description: The set of error responses from the vlag command.
   returned: on error
   type: list
 changed:
@@ -201,18 +201,19 @@ def run_cli(module, cli):
     :param module: The Ansible module to fetch command
     """
     cliswitch = module.params['pn_cliswitch']
-    command = module.params['pn_command']
+    state = module.params['state']
+    command = get_command_from_state(state)
+
     cmd = shlex.split(cli)
-    response = subprocess.Popen(cmd, stderr=subprocess.PIPE,
-                                stdout=subprocess.PIPE, universal_newlines=True)
+
     # 'out' contains the output
     # 'err' contains the error messages
-    out, err = response.communicate()
+    result, out, err = module.run_command(cmd)
 
     print_cli = cli.split(cliswitch)[1]
 
     # Response in JSON format
-    if err:
+    if result != 0:
         module.exit_json(
             command=print_cli,
             stderr=err.strip(),
@@ -236,6 +237,22 @@ def run_cli(module, cli):
         )
 
 
+def get_command_from_state(state):
+    """
+    This method gets appropriate command name for the state specified. It
+    returns the command name for the specified state.
+    :param state: The state for which the respective command name is required.
+    """
+    command = None
+    if state == 'present':
+        command = 'vlag-create'
+    if state == 'absent':
+        command = 'vlag-delete'
+    if state == 'update':
+        command = 'vlag-modify'
+    return command
+
+
 def main():
     """ This section is for argument parsing """
     module = AnsibleModule(
@@ -243,9 +260,8 @@ def main():
             pn_cliusername=dict(required=False, type='str'),
             pn_clipassword=dict(required=False, type='str', no_log=True),
             pn_cliswitch=dict(required=False, type='str', default='local'),
-            pn_command=dict(required=True, type='str',
-                            choices=['vlag-create', 'vlag-delete',
-                                     'vlag-modify']),
+            state =dict(required=True, type='str',
+                        choices=['present', 'absent', 'update']),
             pn_name=dict(required=True, type='str'),
             pn_port=dict(type='str'),
             pn_peer_port=dict(type='str'),
@@ -261,15 +277,15 @@ def main():
             pn_lacp_fallback_timeout=dict(type='str')
         ),
         required_if=(
-            ["pn_command", "vlag-create", ["pn_name", "pn_port", "pn_peer_port",
+            ["state", "present", ["pn_name", "pn_port", "pn_peer_port",
                                            "pn_peer_switch"]],
-            ["pn_command", "vlag-delete", ["pn_name"]],
-            ["pn_command", "vlag-modify", ["pn_name"]]
+            ["state", "absent", ["pn_name"]],
+            ["state", "update", ["pn_name"]]
         )
     )
 
     # Argument accessing
-    command = module.params['pn_command']
+    state = module.params['state']
     name = module.params['pn_name']
     port = module.params['pn_port']
     peer_port = module.params['pn_peer_port']
@@ -280,6 +296,8 @@ def main():
     lacp_timeout = module.params['pn_lacp_timeout']
     lacp_fallback = module.params['pn_lacp_fallback']
     lacp_fallback_timeout = module.params['pn_lacp_fallback_timeout']
+
+    command = get_command_from_state(state)
 
     # Building the CLI command string
     cli = pn_cli(module)
