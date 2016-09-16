@@ -41,74 +41,60 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run this command on.
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to create vlag,
         'absent' to delete vlag and 'update' to modify vlag.
     required: True
     choices: ['present', 'absent', 'update']
-    type: str
   pn_name:
     description:
       - The C(pn_name) takes a valid name for vlag configuration.
     required: true
-    type: str
   pn_port:
     description:
       - Specify the local VLAG port.
       - Required for vlag-create.
-    type: str
   pn_peer_port:
     description:
       - Specify the peer VLAG port.
       - Required for vlag-create.
-    type: str
   pn_mode:
     description:
       - Specify the mode for the VLAG. Active-standby indicates one side is
         active and the other side is in standby mode. Active-active indicates
         that both sides of the vlag are up by default.
     choices: ['active-active', 'active-standby']
-    type: str
   pn_peer_switch:
     description:
       - Specify the fabric-name of the peer switch.
-    type: str
   pn_failover_action:
     description:
       - Specify the failover action as move or ignore.
     choices: ['move', 'ignore']
-    type: str
   pn_lacp_mode:
     description:
       - Specify the LACP mode.
     choices: ['off', 'passive', 'active']
-    type: str
   pn_lacp_timeout:
     description:
       - Specify the LACP timeout as slow(30 seconds) or fast(4 seconds).
     choices: ['slow', 'fast']
-    type: str
   pn_lacp_fallback:
     description:
       - Specify the LACP fallback mode as bundles or individual.
     choices: ['bundle', 'individual']
-    type: str
   pn_lacp_fallback_timeout:
     description:
       - Specify the LACP fallback timeout in seconds. The range is between 30
         and 60 seconds with a default value of 50 seconds.
-    type: str
 """
 
 EXAMPLES = """
