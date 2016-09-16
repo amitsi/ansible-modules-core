@@ -37,52 +37,42 @@ options:
     description:
       - Login username.
     required: true
-    type: str
   pn_clipassword:
     description:
       - Login password.
     required: true
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the CLI on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to add ospf-area, 'absent'
         to remove ospf-area and 'update' to modify ospf-area.
     required: true
     choices: ['present', 'absent', 'update']
-    type: str
   pn_vrouter_name:
     description:
       - Specify the name of the vRouter.
     required: true
-    type: str
   pn_ospf_area:
     description:
       - Specify the OSPF area number.
     required: true
-    type: str
   pn_stub_type:
     description:
       - Specify the OSPF stub type.
     choices: ['none', 'stub', 'stub-no-summary', 'nssa', 'nssa-no-summary']
-    type: str
   pn_prefix_listin:
     description:
       - OSPF prefix list for filtering incoming packets.
-    type: str
   pn_prefix_listout:
     description:
       - OSPF prefix list for filtering outgoing packets.
-    type: str
   pn_quiet:
     description:
       - Enable/disable system information.
     required: false
-    type: bool
     default: true
 """
 
