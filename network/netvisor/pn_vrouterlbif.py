@@ -39,38 +39,31 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the cli on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to add vrouter loopback
         interface and 'absent' to remove vrouter loopback interface.
     required: True
     choices: ['present', 'absent']
-    type: str
   pn_vrouter_name:
     description:
       - Specify the name of the vRouter.
     required: True
-    type: str
   pn_index:
     description:
       - Specify the interface index from 1 to 255.
-    type: int
   pn_interface_ip:
     description:
       - Specify the IP address.
     required: True
-    type: str
 """
 
 EXAMPLES = """
