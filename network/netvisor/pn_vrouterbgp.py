@@ -38,117 +38,92 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the cli on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to add bgp,
         'absent' to remove bgp and 'update' to modify bgp.
     required: True
     choices: ['present', 'absent', 'update']
-    type: str
   pn_vrouter_name:
     description:
       - Specify a name for the vRouter service.
     required: True
-    type: str
   pn_neighbor:
     description:
       - Specify a neighbor IP address to use for BGP.
       - Required for vrouter-bgp-add.
-    type: str
   pn_remote_as:
     description:
       - Specify the remote Autonomous System(AS) number. This value is between
         1 and 4294967295.
       - Required for vrouter-bgp-add.
-    type: str
   pn_next_hop_self:
     description:
       - Specify if the next-hop is the same router or not.
-    type: bool
   pn_password:
     description:
       - Specify a password, if desired.
-    type: str
   pn_ebgp:
     description:
       - Specify a value for external BGP to accept or attempt BGP connections
         to external peers, not directly connected, on the network. This is a
         value between 1 and 255.
-    type: int
   pn_prefix_listin:
     description:
       - Specify the prefix list to filter traffic inbound.
-    type: str
   pn_prefix_listout:
     description:
       - Specify the prefix list to filter traffic outbound.
-    type: str
   pn_route_reflector:
     description:
       - Specify if a route reflector client is used.
-    type: bool
   pn_override_capability:
     description:
       - Specify if you want to override capability.
-    type: bool
   pn_soft_reconfig:
     description:
       - Specify if you want a soft reconfiguration of inbound traffic.
-    type: bool
   pn_max_prefix:
     description:
       - Specify the maximum number of prefixes.
-    type: int
   pn_max_prefix_warn:
     description:
       - Specify if you want a warning message when the maximum number of
         prefixes is exceeded.
-    type: bool
   pn_bfd:
     description:
       - Specify if you want BFD protocol support for fault detection.
-    type: bool
   pn_multiprotocol:
     description:
       - Specify a multi-protocol for BGP.
     choices: ['ipv4-unicast', 'ipv6-unicast']
-    type: str
   pn_weight:
     description:
       - Specify a default weight value between 0 and 65535 for the neighbor
         routes.
-    type: int
   pn_default_originate:
     description:
       - Specify if you want announce default routes to the neighbor or not.
-    type: bool
   pn_keepalive:
     description:
       - Specify BGP neighbor keepalive interval in seconds.
-    type: str
   pn_holdtime:
     description:
       - Specify BGP neighbor holdtime in seconds.
-    type: str
   pn_route_mapin:
     description:
       - Specify inbound route map for neighbor.
-    type: str
   pn_route_mapout:
     description:
       - Specify outbound route map for neighbor.
-    type: str
 """
 
 EXAMPLES = """
