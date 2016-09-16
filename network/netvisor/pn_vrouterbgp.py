@@ -309,7 +309,7 @@ def main():
             pn_max_prefix=dict(type='int'),
             pn_max_prefix_warn=dict(type='bool'),
             pn_bfd=dict(type='bool'),
-            pn_multiprotocol=dict(type='bool',
+            pn_multiprotocol=dict(type='str',
                                   choices=['ipv4-unicast', 'ipv6-unicast']),
             pn_weight=dict(type='int'),
             pn_default_originate=dict(type='bool'),
