@@ -38,17 +38,14 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch to run the cli on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to add vrouter interface,
@@ -56,76 +53,60 @@ options:
         interface.
     required: True
     choices: ['present', 'absent', 'update']
-    type: str
   pn_vrouter_name:
     description:
       - Specify the name of the vRouter interface.
     required: True
-    type: str
   pn_vlan:
     description:
       - Specify the VLAN identifier. This is a value between 1 and 4092.
-    type: int
   pn_interface_ip:
     description:
       - Specify the IP address of the interface in x.x.x.x/n format.
-    type: str
   pn_assignment:
     description:
       - Specify the DHCP method for IP address assignment.
     choices: ['none', 'dhcp', 'dhcpv6', 'autov6']
-    type: str
   pn_vxlan:
     description:
       - Specify the VXLAN identifier. This is a value between 1 and 16777215.
-    type: int
   pn_interface:
     description:
       - Specify if the interface is management, data or span interface.
     choices: ['mgmt', 'data', 'span']
-    type: str
   pn_alias:
     description:
       - Specify an alias for the interface.
-    type: str
   pn_exclusive:
     description:
       - Specify if the interface is exclusive to the configuration. Exclusive
         means that other configurations cannot use the interface. Exclusive is
         specified when you configure the interface as span interface and allows
         higher throughput through the interface.
-    type: bool
   pn_nic_enable:
     description:
       - Specify if the NIC is enabled or not
-    type: bool
   pn_vrrp_id:
     description:
       - Specify the ID for the VRRP interface. The IDs on both vRouters must be
         the same IS number.
-    type: int
   pn_vrrp_priority:
     description:
       - Specify the priority for the VRRP interface. This is a value between
          1 (lowest) and 255 (highest).
-    type: int
   pn_vrrp_adv_int:
     description:
       - Specify a VRRP advertisement interval in milliseconds. The range is
         from 30 to 40950 with a default value of 1000.
-    type: str
   pn_l3port:
     description:
       - Specify a Layer 3 port for the interface.
-    type: str
   pn_secondary_macs:
     description:
       - Specify a secondary MAC address for the interface.
-    type: str
   pn_nic_str:
     description:
       - Specify the type of NIC. Used for vrouter-interface remove/modify.
-    type: str
 """
 
 EXAMPLES = """
