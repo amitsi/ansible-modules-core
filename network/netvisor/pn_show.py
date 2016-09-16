@@ -36,31 +36,25 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the cli on.
     required: False
-    type: str
   pn_command:
     description:
       - The C(pn_command) takes a CLI show command as value.
     required: true
-    type: str
   pn_parameters:
     description:
       - Display output using a specific parameter. Use 'all' to display possible
-        output. List of comman separated parameters.
-    type: str
+        output. List of comma separated parameters.
   pn_options:
     description:
       - Specify formatting options.
-    type: str
 """
 
 EXAMPLES = """
