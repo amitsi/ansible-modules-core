@@ -38,56 +38,46 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the cli on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to create vlan and
         'absent' to delete vlan.
     required: True
     choices: ['present', 'absent']
-    type: str
   pn_vlanid:
     description:
       - Specify a VLAN identifier for the VLAN. This is a value between
         2 and 4092.
     required: True
-    type: int
   pn_scope:
     description:
       - Specify a scope for the VLAN.
       - Required for vlan-create.
     choices: ['fabric', 'local']
-    type: str
   pn_description:
     description:
       - Specify a description for the VLAN.
-    type: str
   pn_stats:
     description:
       - Specify if you want to collect statistics for a VLAN. Statistic
         collection is enabled by default.
-    type: bool
   pn_ports:
     description:
       - Specifies the switch network data port number, list of ports, or range
         of ports. Port numbers must ne in the range of 1 to 64.
-    type: str
   pn_untagged_ports:
     description:
       - Specifies the ports that should have untagged packets mapped to the
         VLAN. Untagged packets are packets that do not contain IEEE 802.1Q VLAN
         tags.
-    type: str
 """
 
 EXAMPLES = """
