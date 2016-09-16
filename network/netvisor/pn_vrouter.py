@@ -41,94 +41,76 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the CLI on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to create vrouter,
         'absent' to delete vrouter and 'update' to modify vrouter.
     required: True
     choices: ['present', 'absent', 'update']
-    type: str
   pn_name:
     description:
       - Specify the name of the vRouter.
     required: true
-    type: str
   pn_vnet:
     description:
       - Specify the name of the VNET.
       - Required for vrouter-create.
-    type: str
   pn_service_type:
     description:
       - Specify if the vRouter is a dedicated or shared VNET service.
     choices: ['dedicated', 'shared']
-    type: str
   pn_service_state:
     description:
       -  Specify to enable or disable vRouter service.
     choices: ['enable', 'disable']
-    type: str
   pn_router_type:
     description:
       - Specify if the vRouter uses software or hardware.
       - Note that if you specify hardware as router type, you cannot assign IP
         addresses using DHCP. You must specify a static IP address.
     choices: ['hardware', 'software']
-    type: str
   pn_hw_vrrp_id:
     description:
       - Specifies the VRRP ID for a hardware vrouter.
-    type: str
   pn_router_id:
     description:
       - Specify the vRouter IP address.
-    type: str
   pn_bgp_as:
     description:
       - Specify the Autonomous System Number(ASN) if the vRouter runs Border
         Gateway Protocol(BGP).
-    type: int
   pn_bgp_redistribute:
     description:
       - Specify how BGP routes are redistributed.
     choices: ['static', 'connected', 'rip', 'ospf']
-    type: str
   pn_bgp_max_paths:
     description:
       - Specify the maximum number of paths for BGP. This is a number between
         1 and 255 or 0 to unset.
-    type: int
   pn_bgp_options:
     description:
       - Specify other BGP options as a whitespaces separted string within
         single quotes ''.
-    type: str
   pn_rip_redistribute:
     description:
       - Specify how RIP routes are redistributed.
     choices: ['static', 'connected', 'ospf', 'bgp']
-    type: str
   pn_ospf_redistribute:
     description:
       - Specify how OSPF routes are redistributed.
     choices: ['static', 'connected', 'bgp', 'rip']
-    type: str
   pn_ospf_options:
     description:
       - Specify other OSPF options as a whitespaces separated string within
         single quotes ''.
-    type: str
 """
 
 EXAMPLES = """
