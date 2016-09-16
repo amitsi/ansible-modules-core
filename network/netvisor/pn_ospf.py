@@ -36,17 +36,14 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch to run the CLI on.
     required: False
-    type: str
   state:
     description:
       - Assert the state of the ospf. Use 'present' to add ospf
@@ -54,21 +51,17 @@ options:
     required: True
     default: present
     choices: ['present', 'absent']
-    type: str
   pn_vrouter_name:
     description:
       - Specify the name of the vRouter.
     required: True
-    type: str
   pn_network_ip:
     description:
       - Specify the network IP (IPv4 or IPv6) address.
     required: True
-    type: str
   pn_ospf_area:
     description:
     - Stub area number for the configuration. Required for vrouter-ospf-add.
-    type: str
 """
 
 EXAMPLES = """
