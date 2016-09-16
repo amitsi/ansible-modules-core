@@ -37,121 +37,95 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch(es) to run the cli on.
     required: False
-    type: str
   state:
     description:
       - State the action to perform. Use 'present' to create trunk,
         'absent' to delete trunk and 'update' to modify trunk.
     required: True
     choices: ['present', 'absent', 'update']
-    type: str
   pn_name:
     description:
       - Specify the name for the trunk configuration.
     required: true
-    type: str
   pn_ports:
     description:
       - Specify the port number(s) for the link(s) to aggregate into the trunk.
       - Required for trunk-create.
-    type: str
   pn_speed:
     description:
       - Specify the port speed or disable the port.
     choices: ['disable', '10m', '100m', '1g', '2.5g', '10g', '40g']
-    type: str
   pn_egress_rate_limit:
     description:
       - Specify an egress port data rate limit for the configuration.
-    type: str
   pn_jumbo:
     description:
       - Specify if the port can receive jumbo frames.
-    type: bool
   pn_lacp_mode:
     description:
       - Specify the LACP mode for the configuration.
     choices: ['off', 'passive', 'active']
-    type: str
   pn_lacp_priority:
     description:
       - Specify the LACP priority. This is a number between 1 and 65535 with a
         default value of 32768.
-    type: int
   pn_lacp_timeout:
     description:
       - Specify the LACP time out as slow (30 seconds) or fast (4seconds).
         The default value is slow.
     choices: ['slow', 'fast']
-    type: str
   pn_lacp_fallback:
     description:
       - Specify the LACP fallback mode as bundles or individual.
     choices: ['bundle', 'individual']
-    type: str
   pn_lacp_fallback_timeout:
     description:
       - Specify the LACP fallback timeout in seconds. The range is between 30
         and 60 seconds with a default value of 50 seconds.
-    type: str
   pn_edge_switch:
     description:
       - Specify if the switch is an edge switch.
-    type: bool
   pn_pause:
     description:
       - Specify if pause frames are sent.
-    type: bool
   pn_description:
     description:
       - Specify a description for the trunk configuration.
-    type: str
   pn_loopback:
     description:
       - Specify loopback if you want to use loopback.
-    type: bool
   pn_mirror_receive:
     description:
       - Specify if the configuration receives mirrored traffic.
-    type: bool
   pn_unkown_ucast_level:
     description:
       - Specify an unkown unicast level in percent. The default value is 100%.
-    type: str
   pn_unkown_mcast_level:
     description:
       - Specify an unkown multicast level in percent. The default value is 100%.
-    type: str
   pn_broadcast_level:
     description:
       - Specify a broadcast level in percent. The default value is 100%.
-    type: str
   pn_port_macaddr:
     description:
       - Specify the MAC address of the port.
-    type: str
   pn_loopvlans:
     description:
       - Specify a list of looping vlans.
-    type: str
   pn_routing:
     description:
       - Specify if the port participates in routing on the network.
-    type: bool
   pn_host:
     description:
       - Host facing port control setting.
-    type: bool
 """
 
 EXAMPLES = """
