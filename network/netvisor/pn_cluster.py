@@ -41,44 +41,36 @@ options:
     description:
       - Provide login username if user is not root.
     required: False
-    type: str
   pn_clipassword:
     description:
       - Provide login password if user is not root.
     required: False
-    type: str
   pn_cliswitch:
     description:
       - Target switch to run the cli on.
     required: False
-    type: str
   state:
     description:
       - Specify action to perform. Use 'present' to create cluster and 'absent'
         to delete cluster.
     required: true
     choices: ['present', 'absent']
-    type: str
   pn_name:
     description:
       - Specify the name of the cluster.
     required: true
-    type: str
   pn_cluster_node1:
     description:
       - Specify the name of the first switch in the cluster.
       - Required for 'cluster-create'.
-    type: str
   pn_cluster_node2:
     description:
       - Specify the name of the second switch in the cluster.
       - Required for 'cluster-create'.
-    type: str
   pn_validate:
     description:
       - Validate the inter-switch links and state of switches in the cluster.
     choices: ['validate', 'no-validate']
-    type: str
 """
 
 EXAMPLES = """
